@@ -1,5 +1,5 @@
 {
-  "name": "taskmate",
+  "name": "vscode-taskmate",
   "displayName": "Taskmate",
   "description": "Launch terminal tasks like a boss.",
   "version": "0.0.1",
