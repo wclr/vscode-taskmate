@@ -1,0 +1,30 @@
+# standard
+.vscode/**
+typings/**
+out/test/**
+test/**
+src/**
+**/*.map
+**.ts
+**/.gitignore
+**/tsconfig.json
+vsc-extension-quickstart.md
+
+# test
+test-folder/**
+
+# extenal dev
+**/**.map.js
+**/**.map
+**/**.ts
+
+# ramda
+**/ramda/dist/ramda.min.js
+**/ramda/src/**
+
+# xstream
+**/.sass-cache/**
+**/xstream/dist/**
+
+# cyclejs
+**/@cycle/**/dist/**

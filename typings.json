@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "ramda": "github:donnut/typescript-ramda/ramda.d.ts"
+  }
+}

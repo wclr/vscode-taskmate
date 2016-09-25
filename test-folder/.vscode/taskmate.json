@@ -1,0 +1,16 @@
+{
+  "trackProcesses": true,
+  "showProcesses": true,
+  "commands": [
+    {
+      "title": "Run default",
+      "name": "default",
+      "tasks": [
+        {
+          "type": "gulp",
+          "name": "server-dev"
+        }
+      ]
+    }
+  ]
+}

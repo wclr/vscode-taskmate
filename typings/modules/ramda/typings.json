@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/donnut/typescript-ramda/master/ramda.d.ts",
+    "raw": "github:donnut/typescript-ramda/ramda.d.ts",
+    "typings": "https://raw.githubusercontent.com/donnut/typescript-ramda/master/ramda.d.ts"
+  }
+}

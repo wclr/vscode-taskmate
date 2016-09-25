@@ -1,0 +1,66 @@
+{
+  "name": "taskmate",
+  "displayName": "Taskmate",
+  "description": "Launch terminal tasks like a boss.",
+  "version": "0.0.1",
+  "publisher": "AlexOsh",
+  "engines": {
+    "vscode": "^1.0.0"
+  },
+  "categories": [
+    "Productivity"
+  ],
+  "_activationEvents": [
+    "onCommand:extension.sayHello"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/src/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.taskmate.showTasks",
+        "title": "Task Mate: List Tasks"
+      },
+      {
+        "command": "extension.taskmate.reload",
+        "title": "Task Mate: Reload Tasks"
+      },
+      {
+        "command": "extension.taskmate.createTerminal",
+        "title": "Task Mate: Open New Terminal"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "extension.taskmate.showTasks",
+        "key": "shift+alt+t",
+        "mac": "cmd+alt+t"
+      }
+    ]
+  },
+  "scripts": {
+    "_vscode:prepublish": "node ./node_modules/vscode/bin/compile",
+    "compile": "node ./node_modules/vscode/bin/compile -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install"
+  },
+  "devDependencies": {
+    "@types/cuid": "0.0.29",
+    "@types/glob": "^5.0.29",
+    "@types/tape": "^4.2.27",
+    "tape": "^4.6.0",
+    "tslint": "^3.14.0",
+    "typescript": "^2.1.0-dev.20160922",
+    "vscode": "^0.11.0"
+  },
+  "dependencies": {
+    "@cycle/isolate": "^1.4.0",
+    "@cycle/xstream-run": "^3.0.4",
+    "@cycle-driver/task": "^1.0.0-beta.0",
+    "glob": "^7.0.6",
+    "ps-tree": "github:whitecolor/ps-tree#modular",
+    "ramda": "^0.22.1",
+    "xstream": "^6.1.0"
+  }
+}
