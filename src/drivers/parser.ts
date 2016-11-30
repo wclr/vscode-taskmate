@@ -1,13 +1,17 @@
 import * as vscode from 'vscode'
-import { makeTaskDriver } from '@cycle-driver/task/xstream'
-import { TaskSource } from '@cycle-driver/task/xstream'
+import { makeTaskDriver } from '@cycler/task/xstream'
+import { TaskSource } from '@cycler/task/xstream'
 import { default as xs, Stream } from 'xstream'
 import * as R from 'ramda'
 import * as path from 'path'
 import * as crypto from 'crypto'
 
 export interface ParserRequest {
-  file: vscode.TextDocument
+  //file: vscode.TextDocument
+  file: {
+    fileName: string
+    data: string
+  }
 }
 
 interface CommonParams {
@@ -68,7 +72,6 @@ const cwd = vscode.workspace.rootPath
 export const makeParserDriver = (options?: ParserDriverOptions) =>
   makeTaskDriver<ParserRequest, ParserResponse, any>(
     (request, callback) => {
-      console.log('parsing', request.file.fileName)
       try {
         let type = getParserTypeByFileName(request.file.fileName)
         if (!type) {
@@ -79,7 +82,7 @@ export const makeParserDriver = (options?: ParserDriverOptions) =>
         let relDir = path.relative(cwd, taskCwd).replace(/\\/g, '/')
         let parser: Parser = parsers[type]
         let parsed: ParserResponse
-        parsed = parser(request.file.getText())
+        parsed = parser(request.file.data)
           .map(_ => R.merge<CommonParams, TextParserResult>({
             id: getTaskId(type, _.name, fileName),
             type,

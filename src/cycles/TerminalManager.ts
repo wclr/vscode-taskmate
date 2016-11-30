@@ -7,7 +7,7 @@ import { WorkspaceRequest, WorkSpaceSource, WorkspaceEvents } from '../drivers/w
 import { TerminalCommand, TerminalSource, TerminalState } from '../drivers/terminal'
 import { StatusBarState, StatusBarSource } from '../drivers/statusbar'
 import { Stream, default as xs } from 'xstream'
-import { success, failure, pair } from '@cycle-driver/task/xstream'
+import { success, failure, pair } from '@cycler/task/xstream'
 import delay from 'xstream/extra/delay'
 import flattenConcurrently from 'xstream/extra/flattenConcurrently'
 import * as R from 'ramda'
@@ -34,7 +34,7 @@ interface Terminal {
   processesCount: number
 }
 
-const barItemCommandPrefix = 'extension.taskmate.statusBarClick_'
+const barItemCommandPrefix = 'taskmate.statusBarClick_'
 
 const barItemStateColors = {
   running: '#98e698',
@@ -121,7 +121,9 @@ export const TerminalManager = (sources: TerminalManagerSources): TerminalManage
     ),
     terminal: xs.merge(
       xs.merge(
-        clickedId$, changedId$, stoppedId$
+        clickedId$,
+        //changedId$,
+        //stoppedId$
       ).map(id => ({
         id,
         action: 'show',
@@ -139,7 +141,7 @@ export const TerminalManager = (sources: TerminalManagerSources): TerminalManage
           {
             text: '$(clippy) Taskmate',
             tooltip: 'List tasks to run',
-            command: 'extension.taskmate.showTasks'
+            command: 'taskmate.showTasks'
           }
         ].concat(terminalItems)
       }

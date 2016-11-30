@@ -1,10 +1,11 @@
 import * as vscode from 'vscode'
 import { WindowRequest, WindowSource } from '../drivers/window'
+import { FSRequest, FSSource } from '../drivers/fs'
 import { ParserSource, ParserRequest } from '../drivers/parser'
 import { GlobSource, GlobRequest } from '../drivers/glob'
 import { WorkspaceRequest, WorkSpaceSource, WorkspaceEvents } from '../drivers/workspace'
 import { Stream, default as xs } from 'xstream'
-import { success, failure, pair } from '@cycle-driver/task/xstream'
+import { success, failure, pair } from '@cycler/task/xstream'
 
 import delay from 'xstream/extra/delay'
 import flattenConcurrently from 'xstream/extra/flattenConcurrently'
@@ -18,7 +19,8 @@ interface TasksLoaderSources {
   workspace: WorkSpaceSource,
   parser: ParserSource,
   window: WindowSource,
-  glob: GlobSource
+  glob: GlobSource,
+  fs: FSSource
 }
 
 interface TasksLoaderSinks {
@@ -27,6 +29,7 @@ interface TasksLoaderSinks {
   window: Stream<WindowRequest>,
   parser: Stream<ParserRequest>
   glob: Stream<GlobRequest>
+  fs: Stream<FSRequest>
 }
 
 function oneByOneWithDelay<T>(files$: Stream<Array<T>>): Stream<T> {
@@ -34,12 +37,12 @@ function oneByOneWithDelay<T>(files$: Stream<Array<T>>): Stream<T> {
     .map(files => files.map(R.pair))
     .map(xs.fromArray)
     .compose(flattenConcurrently)
-    .map(pair => xs.of(pair[0]).compose(delay<T>(pair[1] * 100)))
+    .map(pair => xs.of(pair[0]).compose(delay(pair[1] * 100)))
     .compose(flattenConcurrently)
 }
 
 export const TasksLoader = (sources: TasksLoaderSources): TasksLoaderSinks => {
-  let {glob, parser, workspace, startLoad$} = sources
+  let {fs, glob, parser, workspace, startLoad$} = sources
 
   let filesFound$ = glob
     .select()
@@ -54,7 +57,7 @@ export const TasksLoader = (sources: TasksLoaderSources): TasksLoaderSinks => {
     .map(failure)
     .map(pair)
     .flatten()
-    .map((pair) => `Error while parsing ${pair[0].file.uri.fsPath}`)
+    .map((pair) => `Error while parsing ${pair[0].file.fileName}`)
 
   let errorMessage$: Stream<string> =
     xs.merge(
@@ -68,19 +71,32 @@ export const TasksLoader = (sources: TasksLoaderSources): TasksLoaderSinks => {
 
   return {
     parsedTasks$,
-    workspace: filesFound$
+    workspace: xs.empty(),
+    fs: filesFound$
       .compose(oneByOneWithDelay)
       .map((file: vscode.Uri) => ({
         category: 'openFile',
-        method: 'openTextDocument',
-        params: [file.fsPath]
+        method: 'readFile',
+        path: file.fsPath,
+        params: [file.fsPath, 'utf-8']
       })),
-    parser: workspace.select('openFile')
+    // workspace: filesFound$
+    //   .compose(oneByOneWithDelay)
+    //   .map((file: vscode.Uri) => ({
+    //     category: 'openFile',
+    //     method: 'openTextDocument',
+    //     params: [file.fsPath]
+    //   })),
+    parser: fs.select<string, { path: string }>('openFile')
       .map(success)
+      .map(pair)
       .compose(flattenConcurrently)
-      .map((file: vscode.TextDocument) => ({
-        file
-      })),
+      .map(([request, data]) =>
+        ({ file: { fileName: request.path, data: data } })
+      ),
+      // .map((file: vscode.TextDocument) => ({
+      //   file
+      // })),
     glob: startLoad$.mapTo(xs.fromArray(globPatterns))
       .compose(flattenConcurrently)
       .map(pattern => ({

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { default as xs, Stream } from 'xstream'
-import { makeTaskDriver, TaskSource } from '@cycle-driver/task/xstream'
+import { makeTaskDriver, TaskSource } from '@cycler/task/xstream'
 
 export interface WindowRequest {
   method: string,
@@ -25,14 +25,14 @@ export interface WindowSource extends TaskSource
 export interface WindowDriverOptions {
   context: vscode.ExtensionContext
 }
-
+// 
 export const makeWindowDriver = ({context}: WindowDriverOptions) => {
   return (sink$: any, runSA: any): WindowSource => {
     const source = <WindowSource>makeTaskDriver
       <WindowRequest, WindowResponse, any>({
         getResponse: (request) => {
           if (typeof vscode.window[request.method] !== 'function') {
-            throw new Error(`Illegal window method ${request.method}`)
+            // throw new Error(`Illegal window method ${request.method}`)
           }
           return vscode.window[request.method](...request.params || [])
         }

@@ -26,7 +26,8 @@ interface TasksManagerSinks {
   commands: Stream<CommandsRequest>,
   workspace: Stream<WorkspaceRequest>,
   window: Stream<WindowRequest>,
-  terminal: Stream<TerminalCommand>
+  terminal: Stream<TerminalCommand>,
+  pickedTaskId$: Stream<string>
 }
 const quickPickOptions = {
   placeHolder: 'Select a Task to Launch...'
@@ -64,6 +65,12 @@ const getPickList = (tasks: ParsedTasks): QuickPickItem[] =>
       description: task.type
     }))
 
+const addCommonTasks = (items: QuickPickItem[]): QuickPickItem[] => {
+  return R.concat([
+    { id: 'reloadTasks', label: 'Reload Tasks',  description: 'common task', detail: 'Scans all tasks failes and reloads them'},
+    { id: 'openTerminal', label: 'Open New Terminal', description: 'common task', detail: '' },
+  ], items)
+}
 
 export const TasksManager = (sources: TasksManagerSources): TasksManagerSinks => {
   const {parsedTasks$, reload$, commands, window, terminal} = sources
@@ -79,7 +86,7 @@ export const TasksManager = (sources: TasksManagerSources): TasksManagerSinks =>
   let pickedTaskId$ = window.select('taskPick')
     .flatten()
     .filter(_ => !!_)
-    .map(R.prop('id'))
+    .map<string>(R.prop('id'))
 
   let pickedTask$ = tasks$.map(tasks =>
     pickedTaskId$.map(
@@ -88,14 +95,16 @@ export const TasksManager = (sources: TasksManagerSources): TasksManagerSinks =>
   ).flatten()
     .filter(_ => !!_)
 
-  let showTasks$ = commands.register('extension.taskmate.showTasks')
+  let showTasks$ = commands.register('taskmate.showTasks')
 
   return {
+    pickedTaskId$,
     window: xs.merge(
       tasks$
         .map(tasks => showTasks$.mapTo(tasks))
         .flatten()
         .map(getPickList)
+        .map(addCommonTasks)
         .map(list => ({
           category: 'taskPick',
           method: 'showQuickPick',

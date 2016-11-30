@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import { default as xs, Stream, MemoryStream } from 'xstream'
-import { makeTaskDriver, TaskSource } from '@cycle-driver/task/xstream'
+import { makeTaskDriver, TaskSource } from '@cycler/task/xstream'
 //import psTree = require('ps-tree')
 //import psTree from 'ps-tree'
 import * as fs from 'fs'
@@ -22,11 +22,11 @@ interface CreateCommandParams {
 }
 
 export const terminalCommands = {
-  create: (id, name): TerminalCommand => {
+  create: (id, name, cwd): TerminalCommand => {
     return {
       id,
       action: 'create',
-      params: { name }
+      params: { name, cwd }
     }
   },
   createAndRun: (params: CreateCommandParams): TerminalCommand => {
@@ -194,17 +194,22 @@ export function makeTerminalDriver() {
                 dispose()
               }
             })
-          }                    
+          }
           checkTerminalReady(terminal, 10).then(() => {
             waitAMomentToSettleDown(() => {
-              let pidPromise = terminal.processId || Promise.resolve(terminal._id)              
+              if (terminal.processId) {
+                console.log('terminal.processId exists')  
+              }              
+              let pidPromise = terminal.processId || Promise.resolve(terminal._id)
               pidPromise.then((pid) => {
                 //setTimeout(() => {
                 ps.getAllProcesses((err, allProcesses) => {
                   let children = ps.getChildren(pid, allProcesses)
                   let parent = ps.getParent(pid, allProcesses)
                   let childrenOfParent = parent && ps.getChildren(parent.PID, allProcesses)
-                  console.log('pid', pid)
+                  console.log('processId pid', pid)
+                  console.log('processId chidldren', children)
+                  console.log('processId parent', parent)
                   //console.log('getAllProcesses childrenOfParent', childrenOfParent)
                   terminalInstancesMap[id] = {
                     id,
@@ -215,7 +220,7 @@ export function makeTerminalDriver() {
                     processes: children,
                     state: 'stopped'
                   }
-                  if (command.action === 'createAndRun') {
+                  if (params.cwd) {
                     terminal.sendText(`cd ${params.cwd}`, true)
                     terminal.sendText(params.cmd, true)
                   }

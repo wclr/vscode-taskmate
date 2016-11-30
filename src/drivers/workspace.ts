@@ -1,7 +1,7 @@
-/// <reference path="../../node_modules/@cycle-driver/task/index.d.ts" />
+// <reference path="../../node_modules/@cycler/task/index.d.ts" />
 import * as vscode from 'vscode'
-import { TaskSource, makeTaskDriver } from '@cycle-driver/task/xstream'
-//import { Something } from '@cycle-driver/task'
+import { TaskSource, makeTaskDriver } from '@cycler/task/xstream'
+//import { Something } from '@cycler/task'
 import { default as xs, Stream } from 'xstream'
 
 export const WorkspaceEvents = {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { makeTaskDriver, TaskSource } from '@cycle-driver/task/xstream'
+import { makeTaskDriver, TaskSource } from '@cycler/task/xstream'
 import * as R from 'ramda'
 
 export interface ConfigRequest { }

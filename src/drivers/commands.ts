@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { makeTaskDriver, TaskSource } from '@cycle-driver/task/xstream'
+import { makeTaskDriver, TaskSource } from '@cycler/task/xstream'
 import { default as xs, Stream } from 'xstream'
 
 export interface CommandsRequest {
@@ -75,8 +75,8 @@ export const makeCommandsDriver = ({context}: CommandsDriverOptions) => {
       if (!registredCommands[command]) {
         let events$ = xs.create({
           start: (listener) => {
-            this.disposable = vscode.commands.registerCommand(command, (e) => {              
-              listener.next(command)
+            this.disposable = vscode.commands.registerCommand(command, (result) => {              
+              listener.next(result)
             })            
             context.subscriptions.push(this.disposable)
           },

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as glob from 'glob'
-import { makeTaskDriver, TaskSource } from '@cycle-driver/task/xstream'
+import { makeTaskDriver, TaskSource } from '@cycler/task/xstream'
 
 export interface GlobRequest {
   pattern: string,

@@ -94,7 +94,7 @@ export const makeStatusBarDriver = () => {
 //           let params = command.params || []
 //           item.text = params[0] || ''
 //           item.tooltip = 'hera i am'
-//           item.command = 'extension.taskmate.statusBarClick'
+//           item.command = 'taskmate.statusBarClick'
 //           item.color = 'gray'          
 //           item.show()
 

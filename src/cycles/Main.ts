@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { CommandsSource, CommandsRequest } from '../drivers/commands'
 import { WindowRequest, WindowSource } from '../drivers/window'
+import { FSRequest, FSSource } from '../drivers/fs'
 import { ParserSource, ParserRequest } from '../drivers/parser'
 import { GlobSource, GlobRequest } from '../drivers/glob'
 import { WorkspaceRequest, WorkSpaceSource, } from '../drivers/workspace'
@@ -8,13 +9,22 @@ import { TerminalCommand, TerminalSource } from '../drivers/terminal'
 import { StatusBarState, StatusBarSource } from '../drivers/statusbar'
 import { ConfigSource, ConfigRequest, Config } from '../drivers/config'
 import { Stream, default as xs } from 'xstream'
-import { success, failure, pair } from '@cycle-driver/task/xstream'
+import { success, failure, pair } from '@cycler/task/xstream'
 import delay from 'xstream/extra/delay'
 import flattenConcurrently from 'xstream/extra/flattenConcurrently'
 import * as R from 'ramda'
 import { TasksManager } from './TasksManager'
 import { TasksLoader } from './TasksLoader'
 import { TerminalManager } from './TerminalManager'
+import * as fs from 'fs'
+import * as path from 'path'
+
+
+const getPathFolderPath = (fsPath: string): string =>
+  fs.statSync(fsPath).isDirectory()
+    ? fsPath
+    : path.dirname(fsPath)
+
 
 interface MainSources {
   config: ConfigSource,
@@ -25,6 +35,7 @@ interface MainSources {
   terminal: TerminalSource,
   statusbar: StatusBarSource,
   glob: GlobSource
+  fs: FSSource
 }
 
 interface MainSinks {
@@ -36,25 +47,29 @@ interface MainSinks {
   statusbar?: Stream<StatusBarState>,
   terminal: Stream<TerminalCommand>,
   glob: Stream<GlobRequest>
+  fs: Stream<FSRequest>
 }
 
 export const Main = (sources: MainSources): MainSinks => {
-  let {config, statusbar, commands, workspace,
+  let {fs, config, statusbar, commands, workspace,
     parser, window, terminal, glob} = sources
   let isFolderOpened$ = xs.of(!!vscode.workspace.rootPath)
   let folderOpened$ = isFolderOpened$.filter(R.equals(true))
 
-  let reload$ = commands
-    .register('extension.taskmate.reload')
-  
+  let reloadFromTaskList$ = xs.create()
+  let reload$ = xs.merge(commands
+    .register('taskmate.reload'),
+    reloadFromTaskList$
+  )
+
   let config$ = config
     .select().map(success)
     .flatten().debug('config$').addListener({
       next: () => { },
       error: () => { },
       complete: () => { },
-    })    
-  
+    })
+
   // let noConfigLoaded$ = workspace
   //   .select('loadConfig').map(failure)
 
@@ -62,7 +77,7 @@ export const Main = (sources: MainSources): MainSinks => {
     .compose(delay(0))
 
   let tasksLoader = TasksLoader({
-    parser, glob, workspace, window, startLoad$
+    fs, parser, glob, workspace, window, startLoad$
   })
   let parsedTasks$ = tasksLoader.parsedTasks$
   let tasksManager = TasksManager({
@@ -71,30 +86,36 @@ export const Main = (sources: MainSources): MainSinks => {
     workspace, commands, window, terminal
   })
 
+  reloadFromTaskList$.imitate(
+    tasksManager.pickedTaskId$.filter(R.equals('reloadTasks'))
+  )
+
   let terminalManager = TerminalManager({ terminal, commands, statusbar })
 
   let loadConfig$ = startLoad$
 
   return {
     window: xs.merge(
-      reload$.mapTo({
-        method: 'showInformationMessage',
-        params: ['Reloading!']
-      }),
+      // reload$.mapTo({
+      //   method: 'showInformationMessage',
+      //   params: ['Reloading!']
+      // }),
       terminalManager.message$.map(message => ({
         method: 'showInformationMessage',
         params: [message.text]
       })),
-      commands
-        .register('extension.taskmate.createTerminal')
-        .mapTo({
-          method: 'showInputBox',
-          category: 'openTerminal',
-          params: [{
-            prompt: 'Please enter terminal name',
-            value: 'terminal'
-          }]
-        }),
+      xs.merge(
+        tasksManager.pickedTaskId$.filter(R.equals('openTerminal')),
+        commands
+          .register('taskmate.createTerminal')
+      ).mapTo({
+        method: 'showInputBox',
+        category: 'openTerminal',
+        params: [{
+          prompt: 'Please enter terminal name',
+          value: 'terminal'
+        }]
+      }),
       // errorMessage$.map((message) => ({
       //   method: 'showErrorMessage',
       //   params: [message]
@@ -104,7 +125,7 @@ export const Main = (sources: MainSources): MainSinks => {
     glob: tasksLoader.glob,
     workspace: xs.merge(
       tasksLoader.workspace,
-      tasksManager.workspace      
+      tasksManager.workspace
     ),
     commands: xs.merge(
       tasksManager.commands
@@ -115,16 +136,30 @@ export const Main = (sources: MainSources): MainSinks => {
       terminalManager.terminal,
       window.select('openTerminal')
         .flatten()
-        .debug('openTerminal')
         .map(_ => ({
           action: 'create',
           params: { name: _ || 'terminal' }
-        }))
+        })),
+      commands
+        .register('taskmate.createTerminalHere')
+        .debug('taskmate.createTerminalHere')
+        .map(R.defaultTo({ fsPath: vscode.workspace.rootPath }))
+        .map((uri: vscode.Uri) => uri.fsPath)
+        .debug('here fsPath')
+        .map(getPathFolderPath)
+        .map((folderPath) => ({
+          action: 'create',
+          params: {
+            name: path.basename(folderPath),
+            cwd: folderPath
+          }
+        })),
     ),
     statusbar: xs.merge(
       terminalManager.statusbar
     ),
-    config: loadConfig$
+    config: loadConfig$,
+    fs: tasksLoader.fs
   }
 }
 
